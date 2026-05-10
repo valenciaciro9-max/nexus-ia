@@ -2,25 +2,29 @@ import streamlit as st
 import requests
 import os
 
-# 🔐 API KEY SEGURA (se carga desde Streamlit Secrets)
+# 🔐 API KEY desde Streamlit Secrets
 API_KEY = os.getenv("API_KEY")
 
 st.set_page_config(page_title="NexusIA", page_icon="🤖", layout="centered")
 
 st.title("🤖 NexusIA")
-st.caption("IA tipo ChatGPT para PC y celular 🌐")
+st.caption("Bienvenido a la IA, Disfruta. 🌐")
 
-# 💾 historial del chat
+# 💾 historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# 🧠 personalidad de la IA
+# 🧠 personalidad mejorada
 SYSTEM_PROMPT = {
     "role": "system",
     "content": (
-        "Eres una inteligencia artificial tipo ChatGPT. "
-        "Respondes de forma natural, clara y útil. "
-        "No inventas información. Si no sabes algo, lo dices."
+        "Eres NexusIA, una inteligencia artificial tipo ChatGPT. "
+        "Ayudas con programación (especialmente Roblox Studio, Lua y scripts). "
+        "Si el usuario pide código, siempre lo das completo y funcional. "
+        "Si pide arreglar un script, lo corriges y explicas brevemente el error. "
+        "Usa bloques de código ``` cuando sea necesario. "
+        "Sé claro, útil y directo."
+        "Si el usuario pide informacion que no este relacionado con roblox studio, lo dices. "
     )
 }
 
@@ -57,15 +61,24 @@ def preguntar_ia(mensaje):
         return "Error de conexión 😢"
 
 
-# 💬 mostrar historial
+# 💬 UI estilo chat + copiar código
 for msg in st.session_state.historial:
-    st.chat_message(msg["role"]).write(msg["content"])
+    with st.chat_message(msg["role"]):
 
+        contenido = msg["content"]
+        st.markdown(contenido)
 
-# ✍️ input tipo ChatGPT
+        # 📋 botón copiar si hay código
+        if "```" in contenido:
+            if st.button("📋 Copiar código", key=contenido[:20]):
+                codigo = contenido.split("```")[1]
+                st.code(codigo)
+                st.success("Código listo para copiar 👍")
+
+# ✍️ input
 entrada = st.chat_input("Escribe algo...")
 
 if entrada:
-    st.chat_message("user").write(entrada)
     respuesta = preguntar_ia(entrada)
+    st.chat_message("user").write(entrada)
     st.chat_message("assistant").write(respuesta)
