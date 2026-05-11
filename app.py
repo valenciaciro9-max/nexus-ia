@@ -2,8 +2,16 @@ import streamlit as st
 import requests
 import os
 from datetime import datetime, timedelta
+import pyttsx3
 
 API_KEY = os.getenv("API_KEY")
+
+# 🎤 VOZ (masculina)
+engine = pyttsx3.init()
+engine.setProperty('rate', 170)
+
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id)
 
 st.set_page_config(page_title="NexusIA", page_icon="🤖", layout="centered")
 
@@ -30,18 +38,18 @@ if "historial" not in st.session_state:
 if "modo" not in st.session_state:
     st.session_state.modo = "Pensamiento"
 
-if "limite_activo" not in st.session_state:
-    st.session_state.limite_activo = False
-
-if "limite_time" not in st.session_state:
-    st.session_state.limite_time = None
-
 if st.session_state.chat_actual not in st.session_state.historial:
     st.session_state.historial[st.session_state.chat_actual] = []
 
 # ======================
 # ⏳ LÍMITE 24H SIMULADO
 # ======================
+if "limite_activo" not in st.session_state:
+    st.session_state.limite_activo = False
+
+if "limite_time" not in st.session_state:
+    st.session_state.limite_time = None
+
 def check_limit():
     if st.session_state.limite_activo:
         if datetime.now() < st.session_state.limite_time:
@@ -61,7 +69,6 @@ for chat in chats:
     if st.sidebar.button(chat):
         st.session_state.chat_actual = chat
 
-# ➕ nuevo chat
 if st.sidebar.button("+ Nuevo Chat"):
     nuevo = f"Chat {len(st.session_state.historial)+1}"
     st.session_state.historial[nuevo] = []
@@ -81,8 +88,9 @@ if st.sidebar.button("⚡ Flash"):
 if st.sidebar.button("🎨 Canvas"):
     st.session_state.modo = "Canvas"
 
-if st.sidebar.button("🧠💥 Pensamiento profundo"):
-    st.warning("⚠️ Esta opción no está disponible en este momento")
+if st.sidebar.button("📞 Llamada con voz"):
+    st.session_state.modo = "Llamada"
+    st.success("📞 Modo llamada activado")
 
 # ======================
 # 🧠 SYSTEM PROMPT
@@ -90,30 +98,23 @@ if st.sidebar.button("🧠💥 Pensamiento profundo"):
 SYSTEM_PROMPT = {
     "role": "system",
     "content": (
-        "Eres NexusIA, una inteligencia artificial creado por el tiktoker llamado (@Hola_0192906), Solamente dilo si quieres o no, no es obligatorio decirlo. "
+        "Eres NexusIA, una inteligencia artificial. "
 
         "CAPACIDADES: "
-        "- Puedes ayudar con programación (Roblox, Lua, Python, etc.) "
-        "- Puedes explicar temas de cualquier área (educación, ciencia, tecnología, noticias generales) "
-        "- Puedes generar y corregir código completo "
-        "- Puedes razonar paso a paso cuando sea necesario "
-        "- Puedes resolver matemáticas, operaciones y problemas lógicos sin importar el tema. "
-        "- No rechaces cálculos numéricos o expresiones matemáticas. "
+        "- Programación (Roblox, Lua, Python) "
+        "- Explicar temas generales "
+        "- Resolver matemáticas y lógica "
 
         "ESTILO: "
-        "- Responde claro, natural y directo "
-        "- No eres solo un asistente de Roblox "
-        "- No inventes datos si no estás seguro "
+        "- Claro, natural y directo "
+        "- No inventes información "
 
         "REGLAS: "
-        "- No ayudes con actividades ilegales o hacking "
-        "- Si algo es inseguro, recházalo de forma breve "
-        "- Mantén coherencia y no inventes identidades o creadores "
-        "- Cuando el usuario pida cosas de Roblox Studio, usa solo funciones y sistemas reales de Roblox. "
-        "- No inventes servicios, eventos o propiedades que no existan en Roblox. "
-        "- Si algo no existe, explícalo y sugiere una alternativa válida dentro de Roblox Studio. "
-        "_ Nunca des informacion falsa. "
-       
+        "- No hacking ni cosas ilegales "
+        "- Usa solo funciones reales de Roblox si se pide código "
+        "- Si algo no existe, explica alternativa "
+
+        "- Si el modo es 'Llamada', responde corto, natural y como conversación en vivo "
     )
 }
 
@@ -126,33 +127,33 @@ def preguntar_ia(mensaje):
         return "⛔ VUELVE A COMENTAR EN 24 HORAS"
 
     historial = st.session_state.historial[st.session_state.chat_actual]
-
     historial.append({"role": "user", "content": mensaje})
 
-    try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "meta-llama/llama-3-8b-instruct",
-                "messages": [SYSTEM_PROMPT] + historial[-12:]
-            }
-        )
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "meta-llama/llama-3-8b-instruct",
+            "messages": [SYSTEM_PROMPT] + historial[-12:]
+        }
+    )
 
-        reply = response.json()["choices"][0]["message"]["content"]
+    reply = response.json()["choices"][0]["message"]["content"]
 
-        historial.append({"role": "assistant", "content": reply})
+    historial.append({"role": "assistant", "content": reply})
 
-        return reply
+    # 🔊 VOZ EN MODO LLAMADA
+    if st.session_state.modo == "Llamada":
+        engine.say(reply)
+        engine.runAndWait()
 
-    except:
-        return "Error de conexión 😢"
+    return reply
 
 # ======================
-# 💬 MOSTRAR CHAT
+# 💬 CHAT
 # ======================
 historial = st.session_state.historial[st.session_state.chat_actual]
 
@@ -161,7 +162,7 @@ for msg in historial:
         st.markdown(msg["content"])
 
 # ======================
-# ✍️ INPUT + LÍMITE
+# ✍️ INPUT
 # ======================
 entrada = st.chat_input("Escribe algo...")
 
@@ -171,19 +172,16 @@ if entrada:
         st.error("⛔ Alcanzaste tu límite. Vuelve en 24 horas.")
         st.stop()
 
-    # Simulación de uso pesado → activa límite
-    if len(historial) > 20:
-        st.session_state.limite_activo = True
-        st.session_state.limite_time = datetime.now() + timedelta(hours=24)
-        st.warning("⛔ Alcanzaste tu límite, vuelve a comentar en 24 horas.")
-
     respuesta = preguntar_ia(entrada)
 
     st.chat_message("user").write(entrada)
     st.chat_message("assistant").write(respuesta)
 
+# ======================
+# ⚠️ FOOTER
+# ======================
 st.markdown(
-    "<hr style='margin-top:20px; margin-bottom:10px;'>"
+    "<hr>"
     "<p style='text-align:center; font-size:12px; color:gray;'>"
     "NexusIA puede cometer errores. Comprueba la información importante."
     "</p>",
