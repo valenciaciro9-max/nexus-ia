@@ -90,7 +90,7 @@ if st.sidebar.button("🧠💥 Pensamiento profundo"):
 SYSTEM_PROMPT = {
     "role": "system",
     "content": (
-        "Eres NexusIA, una inteligencia artificial creado por el tiktoker llamado (@Hola_0192906). "
+        "Eres NexusIA, una inteligencia artificial creado por el tiktoker llamado (@Hola_0192906), Solamente dilo si quieres o no, no es obligatorio decirlo. "
 
         "CAPACIDADES: "
         "- Puedes ayudar con programación (Roblox, Lua, Python, etc.) "
@@ -107,6 +107,11 @@ SYSTEM_PROMPT = {
         "- No ayudes con actividades ilegales o hacking "
         "- Si algo es inseguro, recházalo de forma breve "
         "- Mantén coherencia y no inventes identidades o creadores "
+        "- Cuando el usuario pida cosas de Roblox Studio, usa solo funciones y sistemas reales de Roblox. "
+        "- No inventes servicios, eventos o propiedades que no existan en Roblox. "
+        "- Si algo no existe, explícalo y sugiere una alternativa válida dentro de Roblox Studio. "
+        "_ Nunca des informacion falsa. "
+       
     )
 }
 
@@ -174,3 +179,11 @@ if entrada:
 
     st.chat_message("user").write(entrada)
     st.chat_message("assistant").write(respuesta)
+
+st.markdown(
+    "<hr style='margin-top:20px; margin-bottom:10px;'>"
+    "<p style='text-align:center; font-size:12px; color:gray;'>"
+    "NexusIA puede cometer errores. Comprueba la información importante."
+    "</p>",
+    unsafe_allow_html=True
+)
