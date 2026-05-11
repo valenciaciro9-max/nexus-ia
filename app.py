@@ -2,16 +2,8 @@ import streamlit as st
 import requests
 import os
 from datetime import datetime, timedelta
-import pyttsx3
 
 API_KEY = os.getenv("API_KEY")
-
-# 🎤 VOZ (masculina)
-engine = pyttsx3.init()
-engine.setProperty('rate', 170)
-
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[0].id)
 
 st.set_page_config(page_title="NexusIA", page_icon="🤖", layout="centered")
 
@@ -59,6 +51,20 @@ def check_limit():
     return True
 
 # ======================
+# 🔊 VOZ (NAVEGADOR - REAL)
+# ======================
+def speak(text):
+    st.markdown(f"""
+    <script>
+    const msg = new SpeechSynthesisUtterance({text!r});
+    msg.lang = "es-ES";
+    msg.rate = 1;
+    msg.pitch = 1;
+    window.speechSynthesis.speak(msg);
+    </script>
+    """, unsafe_allow_html=True)
+
+# ======================
 # 🧭 SIDEBAR CHATS
 # ======================
 st.sidebar.title("💬 Chats")
@@ -98,7 +104,7 @@ if st.sidebar.button("📞 Llamada con voz"):
 SYSTEM_PROMPT = {
     "role": "system",
     "content": (
-        "Eres NexusIA, una inteligencia artificial. "
+        "Eres NexusIA, una inteligencia artificial. Si alguien te pregunta quien es tu creador, es un tiktoker llamado (@Hola_0192906). "
 
         "CAPACIDADES: "
         "- Programación (Roblox, Lua, Python) "
@@ -147,8 +153,7 @@ def preguntar_ia(mensaje):
 
     # 🔊 VOZ EN MODO LLAMADA
     if st.session_state.modo == "Llamada":
-        engine.say(reply)
-        engine.runAndWait()
+        speak(reply)
 
     return reply
 
