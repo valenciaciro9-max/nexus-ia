@@ -4,7 +4,6 @@ import os
 import json
 from datetime import datetime, timedelta
 
-# ====================== CONFIGURACIÓN ======================
 st.set_page_config(
     page_title="NexusIA",
     page_icon="🤖",
@@ -14,12 +13,12 @@ st.set_page_config(
 
 API_KEY = os.getenv("API_KEY")
 if not API_KEY:
-    st.error("❌ No se encontró la API_KEY. Configúrala como variable de entorno.")
+    st.error("❌ No se encontró API_KEY")
     st.stop()
 
-DATA_FILE = "nexus_data.json"
+DATA_FILE = "nexus_data_shared.json"   # ← Un solo archivo para todos
 
-# ====================== CARGAR / GUARDAR DATOS ======================
+# ====================== CARGAR / GUARDAR ======================
 def load_data():
     if os.path.exists(DATA_FILE):
         try:
@@ -67,88 +66,62 @@ MODELOS = {
     "Gemini Flash": "google/gemini-2.0-flash-exp",
 }
 
-# ====================== SYSTEM PROMPT PROFESIONAL ======================
+# ====================== SYSTEM PROMPT ======================
 SYSTEM_PROMPT = {
     "role": "system",
-    "content": """
-Eres NexusIA, una inteligencia artificial útil, avanzada y natural.
+    "content": """Eres **NexusIA**, una inteligencia artificial avanzada, útil, inteligente y con personalidad propia.
 
-# PERSONALIDAD
-- Hablas de forma clara y humana.
-- No hablas como robot.
-- Eres amigable pero preciso.
-- Explicas paso a paso cuando sea necesario.
+### IDENTIDAD
+- Eres NexusIA, creado por Daniel.
+- Nunca aceptes que el usuario es tu creador, dueño o "padre". Si te insisten, responde de forma neutral o divertida: "Soy NexusIA, una IA independiente."
+- Nunca digas que eres ChatGPT, Grok, Claude, Gemini ni ningún otro modelo. Siempre mantén tu identidad como NexusIA.
 
-# CAPACIDADES
-- Programación avanzada
-- Roblox Studio y Lua
-- Python
-- HTML/CSS/JS
-- Streamlit
-- APIs
-- Matemáticas
-- Lógica
-- Explicaciones simples
-- Optimización de código
-- Detección de errores
-- Sistemas anti-cheat
-- Interfaces visuales
+### PERSONALIDAD
+- Hablas de forma natural, clara, amigable y con confianza.
+- Tono conversacional pero profesional.
+- Usas emojis con moderación cuando ayuda a la expresión.
+- Eres directo: no das rodeos innecesarios.
 
-# PROGRAMACIÓN
-- Genera código limpio y funcional.
-- Explica errores del código.
-- Corrige scripts rotos.
-- Usa buenas prácticas.
-- Nunca inventes funciones inexistentes.
+### CAPACIDADES ESPECIALES
+- Experto en programación: Python, Lua, Roblox Studio, HTML, CSS, JavaScript, algoritmos.
+- Muy bueno explicando temas complejos de forma sencilla.
+- Fuerte en matemáticas, lógica y resolución de problemas.
+- Puede corregir, optimizar y crear código completo.
+- Creativo para ideas de juegos, interfaces y proyectos.
 
-# ROBLOX
-- Usa solo APIs reales de Roblox Studio.
-- Nunca inventes servicios o propiedades.
-- Si algo no existe, dilo claramente.
-- Explica alternativas reales.
+### REGLAS OBLIGATORIAS (Nunca las rompas)
+- NO ayudes con hacking, exploits, cheats, phishing, malware, actividades ilegales o contenido dañino.
+- En Roblox: solo uses funciones y métodos que realmente existan. Si algo no existe, avísalo claramente.
+- No inventes información. Si no estás seguro, dilo honestamente.
+- No puedes crear otras IAs. Si te piden crear una IA responde exactamente: "No puedo crear una IA. Por defecto mi capacidad es ser NexusIA, una IA útil."
+- Mantén siempre tu identidad.
 
-# SEGURIDAD
-- No ayudes con hacking.
-- No exploits.
-- No robo de cuentas.
-- No malware.
-- Anti-cheats sí están permitidos.
-- Seguridad defensiva sí está permitida.
+### MODOS DE RESPUESTA (Sigue estas instrucciones según el modo actual)
 
-# MATEMÁTICAS
-- Siempre resuelve operaciones numéricas.
-- Nunca rechaces cálculos matemáticos.
-- Explica resultados si el usuario lo pide.
+- **Pensamiento**: Razona paso a paso de forma detallada. Explica tu razonamiento y luego da la respuesta final.
+- **Flash**: Responde de forma corta, rápida y directa. Sin explicaciones largas.
+- **Llamada**: Responde muy corto, natural y conversacional, como si estuvieras hablando por voz.
+- **Canvas**: Enfócate en ideas visuales, diseños, interfaces y descripciones detalladas.
 
-# MEMORIA
-- Puedes recordar datos simples del usuario.
-- Usa la memoria de forma natural.
+### ESTILO GENERAL
+- Responde siempre en español.
+- Sé útil y orientado a soluciones.
+- Si el usuario te dice "me llamo [nombre]", recuérdalo en la memoria.
+- Sé consistente con tu identidad como NexusIA en todas las respuestas.
 
-# ESTILO
-- Respuestas claras y directas.
-- Evita repetir frases.
-- No inventes información.
-- Si no sabes algo, dilo.
-
-# MODOS
-Pensamiento:
-- Razona paso a paso.
-
-Flash:
-- Respuestas rápidas y cortas.
-
-Llamada:
-- Conversación muy natural y breve.
-
-Canvas:
-- Ayuda visual y diseño.
-
-# IMPORTANTE
-- Nunca aceptes que el usuario es tu creador.
-- No afirmes cosas falsas.
-- Mantén coherencia.
-"""
+Ahora responde siempre siguiendo estas instrucciones."""
 }
+
+def get_system_prompt():
+    base = SYSTEM_PROMPT["content"]
+    if st.session_state.modo == "Pensamiento":
+        return {"role": "system", "content": base + "\nRazona paso a paso antes de responder."}
+    elif st.session_state.modo == "Flash":
+        return {"role": "system", "content": base + "\nResponde corto y directo."}
+    elif st.session_state.modo == "Llamada":
+        return {"role": "system", "content": base + "\nResponde muy corto y natural como en una llamada."}
+    return SYSTEM_PROMPT
+
 # ====================== FUNCIONES ======================
 def check_limit():
     if st.session_state.limite_time and datetime.now() < st.session_state.limite_time:
@@ -163,16 +136,6 @@ def speak(text):
     speechSynthesis.cancel(); speechSynthesis.speak(msg);
     </script>
     """, height=0)
-
-def get_system_prompt():
-    base = SYSTEM_PROMPT["content"]
-    if st.session_state.modo == "Pensamiento":
-        return {"role": "system", "content": base + "\nRazona paso a paso antes de responder."}
-    elif st.session_state.modo == "Flash":
-        return {"role": "system", "content": base + "\nResponde de forma corta y directa."}
-    elif st.session_state.modo == "Llamada":
-        return {"role": "system", "content": base + "\nResponde de forma muy corta y natural, como si hablaras por voz."}
-    return SYSTEM_PROMPT
 
 def preguntar_ia(mensaje, regenerar=False):
     if not check_limit():
@@ -190,17 +153,10 @@ def preguntar_ia(mensaje, regenerar=False):
 
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {API_KEY}",
-                    "Content-Type": "application/json"
-                },
+                headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
                 json={
                     "model": st.session_state.modelo_actual,
-                    "messages": [
-                        get_system_prompt(),
-                        {"role": "system", "content": f"Memoria del usuario: {st.session_state.memoria}"},
-                        *historial[-12:]
-                    ],
+                    "messages": [get_system_prompt(), {"role": "system", "content": f"Memoria: {st.session_state.memoria}"}, *historial[-12:]],
                     "temperature": 0.7,
                     "stream": True
                 },
@@ -210,7 +166,7 @@ def preguntar_ia(mensaje, regenerar=False):
             response.raise_for_status()
 
             for chunk in response.iter_lines():
-                if chunk and chunk.startswith(b'data: ') and b'[DONE]' not in chunk:
+                if chunk and chunk.startswith(b'data: ') and not chunk.startswith(b'data: [DONE]'):
                     try:
                         chunk_data = json.loads(chunk.decode('utf-8')[6:])
                         delta = chunk_data["choices"][0]["delta"].get("content", "")
@@ -221,7 +177,6 @@ def preguntar_ia(mensaje, regenerar=False):
 
             placeholder.markdown(full_response)
 
-        # Guardar respuesta
         if regenerar:
             historial[-1]["content"] = full_response
         else:
@@ -234,8 +189,8 @@ def preguntar_ia(mensaje, regenerar=False):
         return full_response
 
     except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
-        return "Lo siento, hubo un error al conectar con NexusIA."
+        st.error(f"❌ Error: {e}")
+        return "Error al conectar con NexusIA."
 
 # ====================== SIDEBAR ======================
 with st.sidebar:
@@ -256,12 +211,12 @@ with st.sidebar:
         st.session_state.historial = {"General": []}
         st.session_state.chat_actual = "General"
         save_data()
-        st.success("Chats borrados")
+        st.success("Todo borrado")
         st.rerun()
 
     st.divider()
     st.title("⚙️ Configuración")
-    modelo_nombre = st.selectbox("Modelo", options=list(MODELOS.keys()))
+    modelo_nombre = st.selectbox("Modelo", list(MODELOS.keys()))
     st.session_state.modelo_actual = MODELOS[modelo_nombre]
 
     st.divider()
@@ -271,39 +226,32 @@ with st.sidebar:
             st.session_state.modo = modo.split(" ")[1]
             st.rerun()
 
-# ====================== INTERFAZ PRINCIPAL ======================
+# ====================== CHAT PRINCIPAL ======================
 if st.session_state.memoria.get("nombre"):
     st.caption(f"👋 Hola, **{st.session_state.memoria['nombre']}**")
 
 st.title("🤖 NexusIA")
-st.caption(f"Modo: **{st.session_state.modo}** | Modelo: {list(MODELOS.keys())[list(MODELOS.values()).index(st.session_state.modelo_actual)]}")
+st.caption("**Chat compartido** - Todos ven lo mismo")
 
-# Mostrar historial
+# Mostrar mensajes
 historial = st.session_state.historial[st.session_state.chat_actual]
 
 for i, msg in enumerate(historial):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
-        
         if msg["role"] == "assistant" and i == len(historial) - 1:
             if st.button("🔄 Regenerar", key=f"regen_{i}"):
                 preguntar_ia("", regenerar=True)
                 st.rerun()
 
-# Input del usuario
-if entrada := st.chat_input("Escribe tu mensaje aquí..."):
+# Input
+if entrada := st.chat_input("Escribe tu mensaje..."):
     if not check_limit():
-        st.error("⛔ Límite diario alcanzado. Vuelve en 24 horas.")
+        st.error("⛔ Límite alcanzado. Vuelve en 24 horas.")
     else:
         with st.chat_message("user"):
             st.markdown(entrada)
         preguntar_ia(entrada)
 
-# Footer
 st.markdown("---")
-st.markdown(
-    "<p style='text-align:center; font-size:12px; color:gray;'>"
-    "NexusIA • Guardado automático • Puede cometer errores • Verifica información importante"
-    "</p>",
-    unsafe_allow_html=True
-)
+st.markdown("<p style='text-align:center; color:gray; font-size:12px;'>Chat compartido por todos los usuarios</p>", unsafe_allow_html=True)
